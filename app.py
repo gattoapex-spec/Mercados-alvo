@@ -1,13 +1,13 @@
 import streamlit as st
 import pandas as pd
 
-# Configuração da página para um layout mais profissional e amplo
+# Configuração da página para um layout limpo e amplo
 st.set_page_config(page_title="Seleção de Mercados - Exportação", layout="wide")
 
 st.title("🌍 Inteligência Comercial: Seleção de Mercados-Alvo")
 st.markdown("""
 Este aplicativo ajuda empresas brasileiras a priorizarem mercados estratégicos para exportação. 
-Selecione as variáveis, defina os países e atribua as notas para obter o ranking ponderado em tempo real.
+Selecione as variáveis, defina a importância de cada uma e atribua as notas de cada país.
 """)
 
 # ==========================================
@@ -43,14 +43,9 @@ BANCO_VARIAVEIS = {
         "Necessidade de Adaptação do Produto": "Alterações exigidas em embalagem, rótulo ou fórmula para atender normas locais.",
         "Grau de Conhecimento Interno": "Nível de domínio que sua empresa já possui sobre as regras e cultura daquele mercado.",
         "Preço Competitivo": "Capacidade de manter margem saudável após somar todos os custos de exportação."
-    },
-    "Estrutura Local (Opcionais)": {
-        "Facilidade de Parcerias Estratégicas": "Disponibilidade de agentes para modelos de representação ou Joint Venture.",
-        "Custo de Instalação Comercial": "Custos fixos para abertura de escritório ou filial de vendas local, se necessário."
     }
 }
 
-# Lista dos 30 países sugeridos para exportação brasileira
 LISTA_30_PAISES = [
     "Estados Unidos", "China", "Argentina", "México", "Chile", "Paraguai", "Uruguai", "Colômbia", "Peru", "Portugal",
     "Alemanha", "Espanha", "França", "Reino Unido", "Itália", "Países Baixos", "Japão", "Índia", "Canadá", "Emirados Árabes Unidos",
@@ -68,7 +63,7 @@ paises_selecionados = st.multiselect(
 )
 
 if len(paises_selecionados) > 5:
-    st.error("⚠️ Para garantir uma análise estratégica focada, o limite máximo é de 5 países simultâneos. Por favor, remova os excedentes.")
+    st.error("⚠️ Limite máximo de 5 países simultâneos atingido. Remova um para prosseguir.")
     st.stop()
 
 if not paises_selecionados:
@@ -79,67 +74,72 @@ if not paises_selecionados:
 # PASSO 2: SELEÇÃO DE VARIÁVEIS
 # ==========================================
 st.header("2. Seleção de Variáveis Estratégicas")
-st.caption("Passe o mouse sobre as interrogações para ler o significado de cada critério.")
+st.caption("Escolha quais critérios quer usar. Passe o mouse sobre as interrogações para ver o significado.")
 
 variaveis_finais = {}
 for categoria, sub_vars in BANCO_VARIAVEIS.items():
     with st.expander(f"📂 Categoria: {categoria}"):
         for var_nome, var_desc in sub_vars.items():
-            selecionado = st.checkbox(var_nome, value=True if var_nome in ["Tamanho do Mercado Potencial", "Crescimento do Mercado", "Tarifas e Impostos de Importação", "Custo Logístico de Envio", "Preço Competitivo"] else False, help=var_desc, key=var_nome)
-            if selecionado:
+            padrao = var_nome in ["Tamanho do Mercado Potencial", "Crescimento do Mercado", "Tarifas e Impostos de Importação", "Custo Logístico de Envio", "Preço Competitivo"]
+            if st.checkbox(var_nome, value=padrao, help=var_desc, key=f"chk_{var_nome}"):
                 variaveis_finais[var_nome] = categoria
 
-nova_var = st.text_input("✍️ Quer adicionar alguma outra variável customizada? Digite o rótulo aqui:")
-if nova_var:
-    variaveis_finais[nova_var] = "Customizada"
-
 total_selecionado = len(variaveis_finais)
-st.info(f"Fatores selecionados até o momento: **{total_selecionado}**")
-
-if total_selecionado < 5 or total_selecionado > 10:
-    st.warning(f"💡 Dica de Metodologia: Recomendamos utilizar entre **5 e 10 variáveis** para um resultado robusto sem poluir o modelo.")
+st.info(f"Fatores estratégicos ativos: **{total_selecionado}**")
 
 # ==========================================
-# PASSO 3: MATRIZ DE INPUTS (PESOS E NOTAS)
+# PASSO 3: PESOS E NOTAS VIA FORMULÁRIO SEGURO
 # ==========================================
-st.header("3. Matriz de Avaliação (Pesos e Notas)")
+st.header("3. Avaliação de Pesos e Notas")
+
+pesos = {}
+notas = {pais: {} for pais in paises_selecionados}
 
 if total_selecionado > 0:
-    dados_colunas = ["Variável", "Categoria", "Peso Relevância"] + paises_selecionados
-    linhas = []
-    for var, cat in variaveis_finais.items():
-        linha_dict = {"Variável": var, "Categoria": cat, "Peso Relevância": 3.0}
-        for pais in paises_selecionados:
-            linha_dict[pais] = 3.0
-        linhas.append(linha_dict)
-        
-    df_base = pd.DataFrame(linhas)
+    st.markdown("### ⚖️ Defina o Peso de Relevância de cada variável (1 a 5):")
+    cols_pesos = st.columns(min(total_selecionado, 3))
+    for idx, var in enumerate(variaveis_finais.keys()):
+        col_atual = cols_pesos[idx % min(total_selecionado, 3)]
+        pesos[var] = col_atual.slider(f"Importância: {var}", 1.0, 5.0, 3.0, step=0.5, key=f"peso_{var}")
+
+    st.markdown("### 📝 Atribua as Notas para cada País (1 a 5):")
+    # Organiza em abas (uma para cada país), ficando super elegante e leve para o navegador
+    abas_paises = st.tabs([f"📍 {pais}" for pais in paises_selecionados])
     
-    df_editado = st.data_editor(
-        df_base, 
-        hide_index=True,
-        column_config={
-            "Peso Relevância": st.column_config.NumberColumn("Peso (1-5)", min_value=1.0, max_value=5.0, step=0.5),
-            **{pais: st.column_config.NumberColumn(f"Nota {pais} (1-5)", min_value=1.0, max_value=5.0, step=0.5) for pais in paises_selecionados}
-        }
-    )
-    
+    for idx_pais, pais in enumerate(paises_selecionados):
+        with abas_paises[idx_pais]:
+            st.subheader(f"Notas para {pais}")
+            for var in variaveis_finais.keys():
+                notas[pais][var] = st.slider(f"Nota para '{var}' em {pais}", 1.0, 5.0, 3.0, step=0.5, key=f"nota_{pais}_{var}")
+
     # ==========================================
-    # PASSO 4: DASHBOARD DE RESULTADOS
+    # PASSO 4: DASHBOARD DE RESULTADOS (SEGURO)
     # ==========================================
     st.header("4. Dashboard Consolidado de Decisão")
     
-    df_calculado = df_editado.copy()
-    for pais in paises_selecionados:
-        df_calculado[pais] = df_calculado[pais] * df_calculado["Peso Relevância"]
-        
-    soma_pesos = df_calculado["Peso Relevância"].sum()
-    pontuacao_final = df_calculado[paises_selecionados].sum() / (soma_pesos if soma_pesos > 0 else 1)
-    pontuacao_final = pontuacao_final.round(2)
+    # Processamento matemático simplificado e rápido
+    pontuacao_final = {}
+    soma_pesos = sum(pesos.values())
     
+    # Criando estruturas para exibição final de relatórios
+    linhas_relatorio = []
+    
+    for var, cat in variaveis_finais.items():
+        item_dict = {"Variável": var, "Categoria": cat, "Peso": pesos[var]}
+        for pais in paises_selecionados:
+            item_dict[f"Nota {pais}"] = notas[pais][var]
+        linhas_relatorio.append(item_dict)
+
+    for pais in paises_selecionados:
+        total_ponderado = sum(notas[pais][var] * pesos[var] for var in variaveis_finais.keys())
+        pontuacao_final[pais] = round(total_ponderado / (soma_pesos if soma_pesos > 0 else 1), 2)
+
+    series_pontos = pd.Series(pontuacao_final)
+    
+    # Exibição dos Cartões (KPIs)
     st.subheader("🏆 Principais Destinos")
     kpi_cols = st.columns(len(paises_selecionados))
-    paises_ordenados = pontuacao_final.sort_values(ascending=False)
+    paises_ordenados = series_pontos.sort_values(ascending=False)
     
     for idx, (pais, nota) in enumerate(paises_ordenados.items()):
         with kpi_cols[idx]:
@@ -149,26 +149,14 @@ if total_selecionado > 0:
                 st.metric(label="🥈 2º Lugar", value=pais, delta=f"Nota: {nota}", delta_color="off")
             else:
                 st.metric(label=f"🥉 {idx+1}º Lugar", value=pais, delta=f"Nota: {nota}", delta_color="off")
-                
-    graf_col1, graf_col2 = st.columns(2)
-    
-    with graf_col1:
-        st.subheader("📊 Ranking Geral (Pontuação Ponderada)")
-        # Gráfico nativo do Streamlit: super rápido, interativo e imune a erros de memória
-        st.bar_chart(pontuacao_final, horizontal=True)
-        
-    with graf_col2:
-        st.subheader("📈 Comparativo por Macro-Categorias")
-        # Como o radar dependia do Plotly, usamos um gráfico de área empilhada nativa que mostra 
-        # o peso visual de cada categoria por país de forma fantástica
-        df_radar_grouped = df_editado.groupby("Categoria")[paises_selecionados].mean()
-        st.area_chart(df_radar_grouped)
 
+    # Gráficos nativos ultraestáveis
+    st.subheader("📊 Ranking Geral (Pontuação Ponderada)")
+    st.bar_chart(series_pontos, horizontal=True)
+
+    # Exportação estável em formato padrão
     st.subheader("💾 Exportar Relatório")
-    df_export = df_editado.copy()
-    for pais in paises_selecionados:
-        df_export[f"Ponderado {pais}"] = df_export[pais] * df_export["Peso Relevância"]
-        
+    df_export = pd.DataFrame(linhas_relatorio)
     csv_data = df_export.to_csv(index=False).encode('utf-8')
     st.download_button(
         label="📥 Baixar Dados da Simulação (CSV)",
@@ -177,4 +165,4 @@ if total_selecionado > 0:
         mime="text/csv"
     )
 else:
-    st.info("Por favor, ative pelo menos uma variável estratégica para realizar os cálculos da matriz.")
+    st.info("Ative pelo menos uma variável estratégica para iniciar.")
