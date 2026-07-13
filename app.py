@@ -26,7 +26,7 @@ BANCO_VARIAVEIS = {
     "Acesso e Regulatório": {
         "Tarifas e Impostos de Importação": "Alíquotas de impostos na entrada (verificar se há acordos comerciais favoráveis).",
         "Barreiras Não Tarifárias": "Exigências técnicas, sanitárias, ambientais ou cotas de importação no destino.",
-        "Complexidade Aduaneira": "Nível de burocracia e tempo médio de liberação de carga nos portos/aeroportos.",
+        "Complexidade Aduaneira": "Nível de bureaucracia e tempo médio de liberação de carga nos portos/aeroportos.",
         "Segurança Jurídica": "Estabilidade das leis comerciais e proteção à propriedade intelectual (marcas/patentes)."
     },
     "Logística": {
@@ -89,12 +89,10 @@ variaveis_finais = {}
 for categoria, sub_vars in BANCO_VARIAVEIS.items():
     with st.expander(f"📂 Categoria: {categoria}"):
         for var_nome, var_desc in sub_vars.items():
-            # Exibe o checkbox e adiciona o tooltip de ajuda dinâmico ao lado
             selecionado = st.checkbox(var_nome, value=True if var_nome in ["Tamanho do Mercado Potencial", "Crescimento do Mercado", "Tarifas e Impostos de Importação", "Custo Logístico de Envio", "Preço Competitivo"] else False, help=var_desc, key=var_nome)
             if selecionado:
                 variaveis_finais[var_nome] = categoria
 
-# Variável totalmente personalizada pelo usuário
 nova_var = st.text_input("✍️ Quer adicionar alguma outra variável customizada? Digite o rótulo aqui:")
 if nova_var:
     variaveis_finais[nova_var] = "Customizada"
@@ -102,7 +100,6 @@ if nova_var:
 total_selecionado = len(variaveis_finais)
 st.info(f"Fatores selecionados até o momento: **{total_selecionado}**")
 
-# Validando o range sugerido de 5 a 10 variáveis
 if total_selecionado < 5 or total_selecionado > 10:
     st.warning(f"💡 Dica de Metodologia: Recomendamos utilizar entre **5 e 10 variáveis** para um resultado robusto sem poluir o modelo. Atualmente você possui {total_selecionado}.")
 
@@ -114,18 +111,16 @@ st.header("3. Matriz de Avaliação (Pesos e Notas)")
 st.markdown("Insira a relevância de cada fator (Peso de 1 a 5) e a nota do país para esse critério (Nota de 1 a 5).")
 
 if total_selecionado > 0:
-    # Construção da tabela interativa básica
     dados_colunas = ["Variável", "Categoria", "Peso Relevância"] + paises_selecionados
     linhas = []
     for var, cat in variaveis_finais.items():
         linha_dict = {"Variável": var, "Categoria": cat, "Peso Relevância": 3.0}
         for pais in paises_selecionados:
-            linha_dict[pais] = 3.0 # valor inicial padrão intermediário
+            linha_dict[pais] = 3.0
         linhas.append(linha_dict)
         
     df_base = pd.DataFrame(linhas)
     
-    # Renderiza a tabela editável estilo Excel na tela
     df_editado = st.data_editor(
         df_base, 
         hide_index=True,
@@ -140,24 +135,16 @@ if total_selecionado > 0:
     # ==========================================
     st.header("4. Dashboard Consolidado de Decisão")
     
-    # Cálculos matemáticos em segundo plano
     df_calculado = df_editado.copy()
     for pais in paises_selecionados:
         df_calculado[pais] = df_calculado[pais] * df_calculado["Peso Relevância"]
         
-    # Total Ponderado por País
     soma_pesos = df_calculado["Peso Relevância"].sum()
     pontuacao_final = df_calculado[paises_selecionados].sum() / (soma_pesos if soma_pesos > 0 else 1)
     pontuacao_final = pontuacao_final.round(2)
     
-    vencedor = pontuacao_final.idxmax()
-    nota_vencedor = pontuacao_final.max()
-    
-    # Layout em colunas para os Cartões de Destaque (KPIs)
     st.subheader("🏆 Principais Destinos")
     kpi_cols = st.columns(len(paises_selecionados))
-    
-    # Ordenar para saber quem é o primeiro destacado
     paises_ordenados = pontuacao_final.sort_values(ascending=False)
     
     for idx, (pais, nota) in enumerate(paises_ordenados.items()):
@@ -169,13 +156,12 @@ if total_selecionado > 0:
             else:
                 st.metric(label=f"🥉 {idx+1}º Lugar", value=pais, delta=f"Nota: {nota}", delta_color="off")
                 
-    # Layout dividindo Gráfico de Barras e Gráfico de Radar lado a lado
     graf_col1, graf_col2 = st.columns(2)
     
     with graf_col1:
         st.subheader("📊 Ranking Geral (Pontuação Ponderada)")
         df_barras = pd.DataFrame({"País": pontuacao_final.index, "Pontuação Final": pontuacao_final.values})
-        df_barras = df_barras.sort_values(by="Pontuação Final", ascending=True) # Ascending true gera barras melhores de cima para baixo no horizontal
+        df_barras = df_barras.sort_values(by="Pontuação Final", ascending=True)
         
         fig_barras = px.bar(
             df_barras, 
@@ -187,12 +173,12 @@ if total_selecionado > 0:
             text_auto=True
         )
         fig_barras.update_layout(showlegend=False, height=350, margin=dict(l=20, r=20, t=20, b=20))
-        st.plotly_chart(fig_barras, use_container_width='stretch')
+        # Correção definitiva da largura do gráfico para os padrões atuais:
+        st.plotly_chart(fig_barras, width='stretch')
         
     with graf_col2:
         st.subheader("🕸️ Perfil por Categorias (Gráfico de Radar)")
         
-        # Agrupar notas por categoria para plotar no radar
         df_radar_grouped = df_editado.groupby("Categoria")[paises_selecionados].mean().reset_index()
         
         fig_radar = iplots.Figure()
@@ -210,14 +196,10 @@ if total_selecionado > 0:
             height=350,
             margin=dict(l=40, r=40, t=30, b=30)
         )
-        st.plotly_chart(fig_radar, use_container_width='stretch')
+        # Correção definitiva da largura do gráfico para os padrões atuais:
+        st.plotly_chart(fig_radar, width='stretch')
 
-    # ==========================================
-    # EXPORTAÇÃO DOS DADOS
-    # ==========================================
     st.subheader("💾 Exportar Relatório")
-    
-    # Preparando matriz de resultados detalhados para download
     df_export = df_editado.copy()
     for pais in paises_selecionados:
         df_export[f"Ponderado {pais}"] = df_export[pais] * df_export["Peso Relevância"]
