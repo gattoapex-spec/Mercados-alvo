@@ -1,7 +1,5 @@
 import streamlit as st
 import pandas as pd
-import plotly.graph_objects as iplots
-import plotly.express as px
 
 # Configuração da página para um layout mais profissional e amplo
 st.set_page_config(page_title="Seleção de Mercados - Exportação", layout="wide")
@@ -26,7 +24,7 @@ BANCO_VARIAVEIS = {
     "Acesso e Regulatório": {
         "Tarifas e Impostos de Importação": "Alíquotas de impostos na entrada (verificar se há acordos comerciais favoráveis).",
         "Barreiras Não Tarifárias": "Exigências técnicas, sanitárias, ambientais ou cotas de importação no destino.",
-        "Complexidade Aduaneira": "Nível de bureaucracia e tempo médio de liberação de carga nos portos/aeroportos.",
+        "Complexidade Aduaneira": "Nível de burocracia e tempo médio de liberação de carga nos portos/aeroportos.",
         "Segurança Jurídica": "Estabilidade das leis comerciais e proteção à propriedade intelectual (marcas/patentes)."
     },
     "Logística": {
@@ -69,7 +67,6 @@ paises_selecionados = st.multiselect(
     default=["Colômbia", "México", "Chile"]
 )
 
-# Aplicando a trava física do limitador dinâmico
 if len(paises_selecionados) > 5:
     st.error("⚠️ Para garantir uma análise estratégica focada, o limite máximo é de 5 países simultâneos. Por favor, remova os excedentes.")
     st.stop()
@@ -78,9 +75,8 @@ if not paises_selecionados:
     st.warning("Insira pelo menos 1 país para iniciar a análise.")
     st.stop()
 
-
 # ==========================================
-# PASSO 2: SELEÇÃO DE VARIÁVEIS (ENTRE 5 E 10)
+# PASSO 2: SELEÇÃO DE VARIÁVEIS
 # ==========================================
 st.header("2. Seleção de Variáveis Estratégicas")
 st.caption("Passe o mouse sobre as interrogações para ler o significado de cada critério.")
@@ -101,14 +97,12 @@ total_selecionado = len(variaveis_finais)
 st.info(f"Fatores selecionados até o momento: **{total_selecionado}**")
 
 if total_selecionado < 5 or total_selecionado > 10:
-    st.warning(f"💡 Dica de Metodologia: Recomendamos utilizar entre **5 e 10 variáveis** para um resultado robusto sem poluir o modelo. Atualmente você possui {total_selecionado}.")
-
+    st.warning(f"💡 Dica de Metodologia: Recomendamos utilizar entre **5 e 10 variáveis** para um resultado robusto sem poluir o modelo.")
 
 # ==========================================
 # PASSO 3: MATRIZ DE INPUTS (PESOS E NOTAS)
 # ==========================================
 st.header("3. Matriz de Avaliação (Pesos e Notas)")
-st.markdown("Insira a relevância de cada fator (Peso de 1 a 5) e a nota do país para esse critério (Nota de 1 a 5).")
 
 if total_selecionado > 0:
     dados_colunas = ["Variável", "Categoria", "Peso Relevância"] + paises_selecionados
@@ -131,7 +125,7 @@ if total_selecionado > 0:
     )
     
     # ==========================================
-    # PASSO 4: DASHBOARD DE RESULTADOS AVANÇADOS
+    # PASSO 4: DASHBOARD DE RESULTADOS
     # ==========================================
     st.header("4. Dashboard Consolidado de Decisão")
     
@@ -150,9 +144,9 @@ if total_selecionado > 0:
     for idx, (pais, nota) in enumerate(paises_ordenados.items()):
         with kpi_cols[idx]:
             if idx == 0:
-                st.metric(label=f"🥇 Recomendado", value=pais, delta=f"Nota: {nota}")
+                st.metric(label="🥇 Recomendado", value=pais, delta=f"Nota: {nota}")
             elif idx == 1:
-                st.metric(label=f"🥈 2º Lugar", value=pais, delta=f"Nota: {nota}", delta_color="off")
+                st.metric(label="🥈 2º Lugar", value=pais, delta=f"Nota: {nota}", delta_color="off")
             else:
                 st.metric(label=f"🥉 {idx+1}º Lugar", value=pais, delta=f"Nota: {nota}", delta_color="off")
                 
@@ -160,44 +154,15 @@ if total_selecionado > 0:
     
     with graf_col1:
         st.subheader("📊 Ranking Geral (Pontuação Ponderada)")
-        df_barras = pd.DataFrame({"País": pontuacao_final.index, "Pontuação Final": pontuacao_final.values})
-        df_barras = df_barras.sort_values(by="Pontuação Final", ascending=True)
-        
-        fig_barras = px.bar(
-            df_barras, 
-            x="Pontuação Final", 
-            y="País", 
-            orientation="h",
-            color="Pontuação Final",
-            color_continuous_scale=px.colors.sequential.Blugrn,
-            text_auto=True
-        )
-        fig_barras.update_layout(showlegend=False, height=350, margin=dict(l=20, r=20, t=20, b=20))
-        # Correção definitiva da largura do gráfico para os padrões atuais:
-        st.plotly_chart(fig_barras, width='stretch')
+        # Gráfico nativo do Streamlit: super rápido, interativo e imune a erros de memória
+        st.bar_chart(pontuacao_final, horizontal=True)
         
     with graf_col2:
-        st.subheader("🕸️ Perfil por Categorias (Gráfico de Radar)")
-        
-        df_radar_grouped = df_editado.groupby("Categoria")[paises_selecionados].mean().reset_index()
-        
-        fig_radar = iplots.Figure()
-        for pais in paises_selecionados:
-            fig_radar.add_trace(iplots.Scatterpolar(
-                r=df_radar_grouped[pais].tolist() + [df_radar_grouped[pais].iloc[0]],
-                theta=df_radar_grouped["Categoria"].tolist() + [df_radar_grouped["Categoria"].iloc[0]],
-                fill='toself',
-                name=pais
-            ))
-            
-        fig_radar.update_layout(
-            polar=dict(radialaxis=dict(visible=True, range=[1, 5])),
-            showlegend=True,
-            height=350,
-            margin=dict(l=40, r=40, t=30, b=30)
-        )
-        # Correção definitiva da largura do gráfico para os padrões atuais:
-        st.plotly_chart(fig_radar, width='stretch')
+        st.subheader("📈 Comparativo por Macro-Categorias")
+        # Como o radar dependia do Plotly, usamos um gráfico de área empilhada nativa que mostra 
+        # o peso visual de cada categoria por país de forma fantástica
+        df_radar_grouped = df_editado.groupby("Categoria")[paises_selecionados].mean()
+        st.area_chart(df_radar_grouped)
 
     st.subheader("💾 Exportar Relatório")
     df_export = df_editado.copy()
@@ -209,8 +174,7 @@ if total_selecionado > 0:
         label="📥 Baixar Dados da Simulação (CSV)",
         data=csv_data,
         file_name="priorizacao_mercados_exportacao.csv",
-        mime="text/csv",
-        help="Gera um arquivo de planilha com todas as notas informadas e pesos aplicados."
+        mime="text/csv"
     )
 else:
     st.info("Por favor, ative pelo menos uma variável estratégica para realizar os cálculos da matriz.")
