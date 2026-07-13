@@ -4,10 +4,10 @@ import pandas as pd
 # Configuração da página para um layout limpo e amplo
 st.set_page_config(page_title="Seleção de Mercados - Exportação", layout="wide")
 
-st.title("🌍 Inteligência Comercial: Seleção de Mercados-Alvo")
+st.title("🌍 Seleção de Mercados-Alvo para Exportação")
 st.markdown("""
 Este aplicativo ajuda empresas brasileiras a priorizarem mercados estratégicos para exportação. 
-Selecione as variáveis, defina a importância de cada uma e atribua as notas de cada país.
+Selecione as variáveis que sejam mais importantes para a sua empresa, defina a relevância de cada uma e atribua notas para cada país - você pode preencher com as informações de que dispõe nesse momento, e refazer esta priorização quando achar necessário.
 """)
 
 # ==========================================
