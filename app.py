@@ -187,7 +187,7 @@ if total_selecionado > 0:
             text_auto=True
         )
         fig_barras.update_layout(showlegend=False, height=350, margin=dict(l=20, r=20, t=20, b=20))
-        st.plotly_chart(fig_barras, use_container_width=True)
+        st.plotly_chart(fig_barras, use_container_width='stretch')
         
     with graf_col2:
         st.subheader("🕸️ Perfil por Categorias (Gráfico de Radar)")
@@ -210,7 +210,7 @@ if total_selecionado > 0:
             height=350,
             margin=dict(l=40, r=40, t=30, b=30)
         )
-        st.plotly_chart(fig_radar, use_container_width=True)
+        st.plotly_chart(fig_radar, use_container_width='stretch')
 
     # ==========================================
     # EXPORTAÇÃO DOS DADOS
