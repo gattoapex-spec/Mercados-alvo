@@ -53,11 +53,10 @@ LISTA_30_PAISES = [
 ]
 
 # ==========================================
-# PASSO 1: DEFINE PAÍSES-ALVO (INÍCIO LIMPO)
+# PASSO 1: DEFINE PAÍSES-ALVO
 # ==========================================
 st.header("1. Definição dos Países-Alvo")
 
-# default=[] garante que o aplicativo inicie 100% limpo a cada novo acesso
 paises_selecionados = st.multiselect(
     "Selecione da lista ou digite os países para a comparação (Máximo de 5):",
     options=LISTA_30_PAISES,
@@ -77,7 +76,7 @@ if not paises_selecionados:
 # PASSO 2: SELEÇÃO DE VARIÁVEIS
 # ==========================================
 st.header("2. Seleção de Variáveis Estratégicas")
-st.caption("Escolha quais critérios quer usar. Passe o mouse sobre as interrogações para ver o significado.")
+st.caption("Escolha até 10 critérios, entre os listados abaixo, para comparar os países que você escolheu. Passe o mouse sobre as interrogações para ver o significado de cada critério.")
 
 variaveis_finais = {}
 for categoria, sub_vars in BANCO_VARIAVEIS.items():
@@ -91,21 +90,26 @@ total_selecionado = len(variaveis_finais)
 st.info(f"Fatores estratégicos ativos: **{total_selecionado}**")
 
 # ==========================================
-# PASSO 3: PESOS E NOTAS VIA SLIDERS
+# PASSO 3: AVALIAÇÃO DOS CRITÉRIOS
 # ==========================================
-st.header("3. Avaliação de Pesos e Notas")
+st.header("3. Avaliação dos Critérios")
 
 pesos = {}
 notas = {pais: {} for pais in paises_selecionados}
 
 if total_selecionado > 0:
-    st.markdown("### ⚖️ Defina o Peso de Relevância de cada variável (1 a 5):")
+    st.markdown("### ⚖️ Defina a relevância de cada variável")
+    st.markdown("Alguns dos critérios que você selecionou acima são mais importantes para sua empresa que outros. Defina a relevância de cada um deles atribuindo uma nota de 1 a 5 - 1 para os que têm menos importância, 5 para os mais relevantes.")
+    
     cols_pesos = st.columns(min(total_selecionado, 3))
     for idx, var in enumerate(variaveis_finais.keys()):
         col_atual = cols_pesos[idx % min(total_selecionado, 3)]
         pesos[var] = col_atual.slider(f"Importância: {var}", 1.0, 5.0, 3.0, step=0.5, key=f"peso_{var}")
 
-    st.markdown("### 📝 Atribua as Notas para cada País (1 a 5):")
+    st.markdown("---")
+    st.markdown("### 📝 Atribua notas para cada país")
+    st.markdown("Agora, considerando o que você já sabe sobre cada um dos países que está comparando, atribua notas de 1 a 5 para cada critério, considerando a realidade de cada país - quando terminar o primeiro, basta clicar no país seguinte, e assim por diante. **Importante:** lembre-se que as notas mais altas significam que aquele país oferece mais vantagens para você. Então, por exemplo, quanto maior o tamanho de um mercado para sua empresa, mais alta a nota; por outro lado, quanto maior o custo logístico para sua empresa, mais baixa a nota.")
+    
     abas_paises = st.tabs([f"📍 {pais}" for pais in paises_selecionados])
     
     for idx_pais, pais in enumerate(paises_selecionados):
