@@ -141,17 +141,12 @@ if total_selecionado > 0:
 
     st.subheader("📊 Ranking Geral (Pontuação Ponderada)")
     
-    # Estruturação correta e indentada para o gráfico de barras com cores por país
-    df_grafico = pd.DataFrame({
-        "País": paises_ordenados.index,
-        "Pontuação Final": paises_ordenados.values
-    })
+    # Estruturação em formato largo (wide format):
+    # Cada país vira uma coluna própria, garantindo cores distintas sem desconfigurar as barras horizontais
+    df_grafico_wide = pd.DataFrame([paises_ordenados.to_dict()])
     
     st.bar_chart(
-        df_grafico, 
-        x="Pontuação Final", 
-        y="País", 
-        color="País", 
+        df_grafico_wide, 
         horizontal=True
     )
 
