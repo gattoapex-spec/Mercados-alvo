@@ -141,15 +141,19 @@ if total_selecionado > 0:
 
     st.subheader("📊 Ranking Geral (Pontuação Ponderada)")
     
-    # Estruturação para gráfico colorido por país de forma compatível e segura
-    df_grafico = pd.DataFrame({
+   df_grafico = pd.DataFrame({
         "País": paises_ordenados.index,
         "Pontuação Final": paises_ordenados.values
-    }).set_index("País")
+    })
     
-    # Gráfico de barras horizontal nativo
-    st.bar_chart(df_grafico, horizontal=True)
-
+    # Ao passar color="País", o Streamlit força uma cor diferente para cada barra
+    st.bar_chart(
+        df_grafico, 
+        x="Pontuação Final", 
+        y="País", 
+        color="País", 
+        horizontal=True
+    )
     # ==========================================
     # RELATÓRIO COMPLETO PARA DOWNLOAD
     # ==========================================
