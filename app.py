@@ -139,9 +139,17 @@ if total_selecionado > 0:
             else:
                 st.metric(label=f"🥉 {idx+1}º Lugar", value=pais, delta=f"Nota: {nota}", delta_color="off")
 
-    st.subheader("📊 Ranking Geral (Pontuação Ponderada)")
-    st.bar_chart(series_pontos, horizontal=True)
-
+   st.subheader("📊 Ranking Geral ")
+    
+    # Prepara os dados em colunas individuais para garantir cores diferentes por país
+    df_grafico_cores = pd.DataFrame([pontuacao_final])
+    
+    # Exibe o gráfico horizontal com cores distintas e legenda
+    st.bar_chart(
+        df_grafico_cores, 
+        horizontal=True,
+        color=paises_selecionados
+    )
     # ==========================================
     # CONSTRUÇÃO DO RELATÓRIO COMPLETO PARA DOWNLOAD
     # ==========================================
