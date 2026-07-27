@@ -140,41 +140,22 @@ if total_selecionado > 0:
                 st.metric(label=f"🥉 {idx+1}º Lugar", value=pais, delta=f"Nota: {nota}", delta_color="off")
 
     st.subheader("📊 Ranking Geral (Pontuação Ponderada)")
-    
-    # Exibição visual limpa usando a ProgressColumn do Streamlit
-    df_ranking_visual = pd.DataFrame({
-        "País": paises_ordenados.index,
-        "Pontuação Final": paises_ordenados.values
-    })
-    
-    st.dataframe(
-        df_ranking_visual,
-        hide_index=True,
-        use_container_width=True,
-        column_config={
-            "País": st.column_config.TextColumn("País-Alvo", help="Mercados analisados"),
-            "Pontuação Final": st.column_config.ProgressColumn(
-                "Nota Ponderada (1 a 5)",
-                help="Pontuação geral calculada com base nos pesos e notas",
-                format="%.2f",
-                min_value=1.0,
-                max_value=5.0
-            )
-        }
-    )
+    st.bar_chart(series_pontos, horizontal=True)
 
     # ==========================================
-    # RELATÓRIO COMPLETO PARA DOWNLOAD
+    # CONSTRUÇÃO DO RELATÓRIO COMPLETO PARA DOWNLOAD
     # ==========================================
     st.subheader("💾 Exportar Relatório de Priorização")
     st.caption("Baixe o relatório consolidado com o ranking final e o detalhamento de todas as notas e pesos atribuídos.")
 
+    # 1. Tabela de Resumo (Ranking)
     df_ranking = pd.DataFrame({
         "Posição": [f"{i+1}º Lugar" for i in range(len(paises_ordenados))],
         "País": paises_ordenados.index,
         "Pontuação Final Ponderada (1 a 5)": paises_ordenados.values
     })
 
+    # 2. Tabela Detalhada (Matriz de Variáveis)
     linhas_detalhadas = []
     for var, cat in variaveis_finais.items():
         linha = {
@@ -190,15 +171,17 @@ if total_selecionado > 0:
         
     df_detalhado = pd.DataFrame(linhas_detalhadas)
 
+    # Montando um texto/CSV estruturado em blocos para o arquivo final
     conteudo_csv = "=== RELATÓRIO DE PRIORIZAÇÃO DE MERCADOS-ALVO ===\n\n"
     conteudo_csv += "--- RANKING FINAL ---\n"
     conteudo_csv += df_ranking.to_csv(index=False, sep=";") + "\n\n"
     conteudo_csv += "--- MATRIZ DETALHADA DE NOTAS E PESOS ---\n"
     conteudo_csv += df_detalhado.to_csv(index=False, sep=";")
 
+    # Botão de Download com formato amigável ao Excel em Português (separado por ponto e vírgula)
     st.download_button(
         label="📥 Baixar Relatório Completo (Excel / CSV)",
-        data=conteudo_csv.encode('utf-8-sig'),
+        data=conteudo_csv.encode('utf-8-sig'), # utf-8-sig garante que acentos abram perfeitamente no Excel
         file_name="relatorio_priorizacao_mercados.csv",
         mime="text/csv",
         help="Baixa um arquivo compatível com o Excel contendo o ranking final e a matriz completa de cálculo."
