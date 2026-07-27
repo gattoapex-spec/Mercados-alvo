@@ -88,7 +88,7 @@ total_selecionado = len(variaveis_finais)
 st.info(f"Fatores estratégicos ativos: **{total_selecionado}**")
 
 # ==========================================
-# PASSO 3: PESOS E NOTAS VIA FORMULÁRIO SEGURO
+# PASSO 3: PESOS E NOTAS VIA SLIDERS
 # ==========================================
 st.header("3. Avaliação de Pesos e Notas")
 
@@ -103,7 +103,6 @@ if total_selecionado > 0:
         pesos[var] = col_atual.slider(f"Importância: {var}", 1.0, 5.0, 3.0, step=0.5, key=f"peso_{var}")
 
     st.markdown("### 📝 Atribua as Notas para cada País (1 a 5):")
-    # Organiza em abas (uma para cada país), ficando super elegante e leve para o navegador
     abas_paises = st.tabs([f"📍 {pais}" for pais in paises_selecionados])
     
     for idx_pais, pais in enumerate(paises_selecionados):
@@ -113,22 +112,12 @@ if total_selecionado > 0:
                 notas[pais][var] = st.slider(f"Nota para '{var}' em {pais}", 1.0, 5.0, 3.0, step=0.5, key=f"nota_{pais}_{var}")
 
     # ==========================================
-    # PASSO 4: DASHBOARD DE RESULTADOS (SEGURO)
+    # PASSO 4: DASHBOARD DE RESULTADOS
     # ==========================================
     st.header("4. Dashboard Consolidado de Decisão")
     
-    # Processamento matemático simplificado e rápido
     pontuacao_final = {}
     soma_pesos = sum(pesos.values())
-    
-    # Criando estruturas para exibição final de relatórios
-    linhas_relatorio = []
-    
-    for var, cat in variaveis_finais.items():
-        item_dict = {"Variável": var, "Categoria": cat, "Peso": pesos[var]}
-        for pais in paises_selecionados:
-            item_dict[f"Nota {pais}"] = notas[pais][var]
-        linhas_relatorio.append(item_dict)
 
     for pais in paises_selecionados:
         total_ponderado = sum(notas[pais][var] * pesos[var] for var in variaveis_finais.keys())
@@ -150,19 +139,52 @@ if total_selecionado > 0:
             else:
                 st.metric(label=f"🥉 {idx+1}º Lugar", value=pais, delta=f"Nota: {nota}", delta_color="off")
 
-    # Gráficos nativos ultraestáveis
     st.subheader("📊 Ranking Geral (Pontuação Ponderada)")
     st.bar_chart(series_pontos, horizontal=True)
 
-    # Exportação estável em formato padrão
-    st.subheader("💾 Exportar Relatório")
-    df_export = pd.DataFrame(linhas_relatorio)
-    csv_data = df_export.to_csv(index=False).encode('utf-8')
+    # ==========================================
+    # CONSTRUÇÃO DO RELATÓRIO COMPLETO PARA DOWNLOAD
+    # ==========================================
+    st.subheader("💾 Exportar Relatório de Priorização")
+    st.caption("Baixe o relatório consolidado com o ranking final e o detalhamento de todas as notas e pesos atribuídos.")
+
+    # 1. Tabela de Resumo (Ranking)
+    df_ranking = pd.DataFrame({
+        "Posição": [f"{i+1}º Lugar" for i in range(len(paises_ordenados))],
+        "País": paises_ordenados.index,
+        "Pontuação Final Ponderada (1 a 5)": paises_ordenados.values
+    })
+
+    # 2. Tabela Detalhada (Matriz de Variáveis)
+    linhas_detalhadas = []
+    for var, cat in variaveis_finais.items():
+        linha = {
+            "Categoria": cat,
+            "Variável Estratégica": var,
+            "Peso de Relevância": pesos[var]
+        }
+        for pais in paises_selecionados:
+            linha[f"Nota ({pais})"] = notas[pais][var]
+            linha[f"Pontuação Ponderada ({pais})"] = round(notas[pais][var] * pesos[var], 2)
+            
+        linhas_detalhadas.append(linha)
+        
+    df_detalhado = pd.DataFrame(linhas_detalhadas)
+
+    # Montando um texto/CSV estruturado em blocos para o arquivo final
+    conteudo_csv = "=== RELATÓRIO DE PRIORIZAÇÃO DE MERCADOS-ALVO ===\n\n"
+    conteudo_csv += "--- RANKING FINAL ---\n"
+    conteudo_csv += df_ranking.to_csv(index=False, sep=";") + "\n\n"
+    conteudo_csv += "--- MATRIZ DETALHADA DE NOTAS E PESOS ---\n"
+    conteudo_csv += df_detalhado.to_csv(index=False, sep=";")
+
+    # Botão de Download com formato amigável ao Excel em Português (separado por ponto e vírgula)
     st.download_button(
-        label="📥 Baixar Dados da Simulação (CSV)",
-        data=csv_data,
-        file_name="priorizacao_mercados_exportacao.csv",
-        mime="text/csv"
+        label="📥 Baixar Relatório Completo (Excel / CSV)",
+        data=conteudo_csv.encode('utf-8-sig'), # utf-8-sig garante que acentos abram perfeitamente no Excel
+        file_name="relatorio_priorizacao_mercados.csv",
+        mime="text/csv",
+        help="Baixa um arquivo compatível com o Excel contendo o ranking final e a matriz completa de cálculo."
     )
 else:
     st.info("Ative pelo menos uma variável estratégica para iniciar.")
