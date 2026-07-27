@@ -141,13 +141,26 @@ if total_selecionado > 0:
 
     st.subheader("📊 Ranking Geral (Pontuação Ponderada)")
     
-    # Estruturação em formato largo (wide format):
-    # Cada país vira uma coluna própria, garantindo cores distintas sem desconfigurar as barras horizontais
-    df_grafico_wide = pd.DataFrame([paises_ordenados.to_dict()])
+    # Exibição visual limpa usando a ProgressColumn do Streamlit
+    df_ranking_visual = pd.DataFrame({
+        "País": paises_ordenados.index,
+        "Pontuação Final": paises_ordenados.values
+    })
     
-    st.bar_chart(
-        df_grafico_wide, 
-        horizontal=True
+    st.dataframe(
+        df_ranking_visual,
+        hide_index=True,
+        use_container_width=True,
+        column_config={
+            "País": st.column_config.TextColumn("País-Alvo", help="Mercados analisados"),
+            "Pontuação Final": st.column_config.ProgressColumn(
+                "Nota Ponderada (1 a 5)",
+                help="Pontuação geral calculada com base nos pesos e notas",
+                format="%.2f",
+                min_value=1.0,
+                max_value=5.0
+            )
+        }
     )
 
     # ==========================================
