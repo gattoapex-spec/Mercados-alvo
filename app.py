@@ -53,13 +53,16 @@ LISTA_30_PAISES = [
 ]
 
 # ==========================================
-# PASSO 1: LIMITADOR DINÂMICO DE PAÍSES
+# PASSO 1: DEFINE PAÍSES-ALVO (INÍCIO LIMPO)
 # ==========================================
 st.header("1. Definição dos Países-Alvo")
+
+# default=[] garante que o aplicativo inicie 100% limpo a cada novo acesso
 paises_selecionados = st.multiselect(
-    "Selecione ou digite os países para a comparação (Máximo de 5):",
+    "Selecione da lista ou digite os países para a comparação (Máximo de 5):",
     options=LISTA_30_PAISES,
-    default=["Colômbia", "México", "Chile"]
+    default=[],
+    placeholder="Digite ou escolha até 5 países..."
 )
 
 if len(paises_selecionados) > 5:
@@ -67,7 +70,7 @@ if len(paises_selecionados) > 5:
     st.stop()
 
 if not paises_selecionados:
-    st.warning("Insira pelo menos 1 país para iniciar a análise.")
+    st.info("👆 Por favor, selecione ou digite pelo menos 1 país acima para começar a montar sua matriz.")
     st.stop()
 
 # ==========================================
@@ -139,23 +142,22 @@ if total_selecionado > 0:
             else:
                 st.metric(label=f"🥉 {idx+1}º Lugar", value=pais, delta=f"Nota: {nota}", delta_color="off")
 
+    # Gráfico de barras azuis nativo
     st.subheader("📊 Ranking Geral (Pontuação Ponderada)")
-    st.bar_chart(series_pontos, horizontal=True)
+    st.bar_chart(paises_ordenados, horizontal=True)
 
     # ==========================================
-    # CONSTRUÇÃO DO RELATÓRIO COMPLETO PARA DOWNLOAD
+    # RELATÓRIO COMPLETO PARA DOWNLOAD
     # ==========================================
     st.subheader("💾 Exportar Relatório de Priorização")
     st.caption("Baixe o relatório consolidado com o ranking final e o detalhamento de todas as notas e pesos atribuídos.")
 
-    # 1. Tabela de Resumo (Ranking)
     df_ranking = pd.DataFrame({
         "Posição": [f"{i+1}º Lugar" for i in range(len(paises_ordenados))],
         "País": paises_ordenados.index,
         "Pontuação Final Ponderada (1 a 5)": paises_ordenados.values
     })
 
-    # 2. Tabela Detalhada (Matriz de Variáveis)
     linhas_detalhadas = []
     for var, cat in variaveis_finais.items():
         linha = {
@@ -171,17 +173,15 @@ if total_selecionado > 0:
         
     df_detalhado = pd.DataFrame(linhas_detalhadas)
 
-    # Montando um texto/CSV estruturado em blocos para o arquivo final
     conteudo_csv = "=== RELATÓRIO DE PRIORIZAÇÃO DE MERCADOS-ALVO ===\n\n"
     conteudo_csv += "--- RANKING FINAL ---\n"
     conteudo_csv += df_ranking.to_csv(index=False, sep=";") + "\n\n"
     conteudo_csv += "--- MATRIZ DETALHADA DE NOTAS E PESOS ---\n"
     conteudo_csv += df_detalhado.to_csv(index=False, sep=";")
 
-    # Botão de Download com formato amigável ao Excel em Português (separado por ponto e vírgula)
     st.download_button(
         label="📥 Baixar Relatório Completo (Excel / CSV)",
-        data=conteudo_csv.encode('utf-8-sig'), # utf-8-sig garante que acentos abram perfeitamente no Excel
+        data=conteudo_csv.encode('utf-8-sig'),
         file_name="relatorio_priorizacao_mercados.csv",
         mime="text/csv",
         help="Baixa um arquivo compatível com o Excel contendo o ranking final e a matriz completa de cálculo."
